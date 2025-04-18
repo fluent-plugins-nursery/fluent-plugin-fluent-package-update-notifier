@@ -5,12 +5,17 @@ Gem::Specification.new do |spec|
   spec.name    = "fluent-plugin-fluent-package-update-notifier"
   spec.version = "0.1.0"
   spec.authors = ["Kentaro Hayashi"]
-  spec.email   = ["kenhys@gmail.com"]
+  spec.email   = ["hayashi@clear-code.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{Notify latest version of fluent-package}
+  spec.description   = %q{Notify latest version of fluent-package on startup}
+  spec.homepage      = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier"
   spec.license       = "Apache-2.0"
+
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier"
+  spec.metadata["changelog_uri"] = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier/issues"
 
   spec.files         = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
