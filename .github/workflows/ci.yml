@@ -2,7 +2,7 @@ name: CI
 on:
   push:
   pull_request:
-  dispatch_workflow:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
