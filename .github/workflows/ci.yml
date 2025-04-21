@@ -25,12 +25,12 @@ jobs:
           - windows-latest
     name: Test with Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ matrix.ruby }}
-    - name: unit testing
-      env:
-        CI: true
-      run: |
-        bundle exec rake test TESTOPTS="-v --no-show-detail-immediately"
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - name: unit testing
+        env:
+          CI: true
+        run: |
+          bundle exec rake test TESTOPTS="-v --no-show-detail-immediately"
