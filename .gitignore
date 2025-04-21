@@ -1,0 +1,7 @@
+*.sh
+*.log
+*.conf
+*.json
+
+pkg
+Gemfile.lock
