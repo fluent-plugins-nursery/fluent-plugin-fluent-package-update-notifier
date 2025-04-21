@@ -29,6 +29,8 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: Install dependencies
+        run: bundle install
       - name: unit testing
         env:
           CI: true
