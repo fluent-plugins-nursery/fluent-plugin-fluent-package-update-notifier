@@ -78,6 +78,7 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     setup do
       ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
       ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+      stub.instance_of(Fluent::Plugin::FluentPackage::UpdateChecker).check_package_released?(anything) { true }
     end
 
     test "no LTS update" do
@@ -138,6 +139,7 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     setup do
       ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
       ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+      stub.instance_of(Fluent::Plugin::FluentPackage::UpdateChecker).check_package_released?(anything) { true }
     end
 
     test "no update" do
@@ -197,6 +199,43 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
         ])
         d.run
         assert_match(/\[#{level}\]: fluent-package v6.1.0 is available/, d.logs.last)
+      end
+    end
+  end
+
+  sub_test_case "each platforms" do
+    setup do
+      ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
+      ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+    end
+
+    data("trixie" => [%W(ID=debian\n VERSION_CODENAME=trixie\n)],
+         "ubuntu" => [%W(ID=plucky]\n VERSION_CODENAME=plucky\n)],
+         "rockylinux/8" => [%W(ID="rocky"\n CPE_NAME="cpe:/o:rocky:rocky:8:GA"\n)],
+         "rockylinux/9" => [%W(ID="rocky"\n CPE_NAME="cpe:/o:rocky:rocky:9:GA"\n)],
+         "almalinux/8" => [%W(ID="almalinux"\n CPE_NAME="cpe:/o:almalinux:almalinux:8::baseos"\n)],
+         "almalinux/9" => [%W(ID="almalinux"\n CPE_NAME="cpe:/o:almalinux:almalinux:8::baseos"\n)],
+         "amazonlinux/2" => [%W(ID="amzn"\n CPE_NAME="cpe:2.3:o:amazon:amazon_linux:2"\n)],
+         "amazonlinux/2023" => [%W(ID="amzn"\n CPE_NAME="cpe:2.3:o:amazon:amazon_linux:2023"\n)])
+    test "released, but not shipped yet for linux" do
+      assert_nothing_raised do |os_release|
+        stub(File).readlines { os_release }
+        write_config_version("5.0.6")
+        cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.404"])
+        d = create_driver
+        d.run
+        assert_match(/\[info\]: No update for fluent-package 5.0.6/, d.logs.last)
+      end
+    end
+
+    test "released, but not shipped yet for windows" do
+      assert_nothing_raised do |os_release|
+        stub(RbConfig::CONFIG) { {'host_os' => "mingw32"} }
+        write_config_version("5.0.6")
+        cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.404"])
+        d = create_driver
+        d.run
+        assert_match(/\[info\]: No update for fluent-package 5.0.6/, d.logs.last)
       end
     end
   end

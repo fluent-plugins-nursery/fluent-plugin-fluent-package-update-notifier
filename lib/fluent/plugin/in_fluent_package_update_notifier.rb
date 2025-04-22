@@ -37,6 +37,9 @@ module Fluent
       desc "Notify checking update intervals"
       config_param :notify_interval, :integer, default: 60 * 60 * 24
 
+      desc "Package repository site"
+      config_param :repository_sites, :array, default: ["https://packages.treasuredata.com"]
+
       def configure(conf)
         super
       end
@@ -63,7 +66,8 @@ module Fluent
             lts: @lts,
             notify_major_upgrade: @notify_major_upgrade,
             notify_level: @notify_level,
-            logger: log
+            logger: log,
+            repository_sites: @repository_sites
           }
           checker = Fluent::Plugin::FluentPackage::UpdateChecker.new(options)
           checker.run
