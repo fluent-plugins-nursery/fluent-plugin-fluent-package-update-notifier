@@ -33,6 +33,7 @@ $ bundle
 |notify_major_upgrade|bool (optional)|Notify whether major upgrade is available or not (e.g. from v5 to v6)|`true`|
 |notify_level|enum (optional)|Specify notification log level when update is available (`info`, `warn`)|`info`|
 |notify_interval|integer (optional)|Notify checking update intervals|`86400`|
+|repository_sites|array (optional)|Package repository site|`["https://packages.treasuredata.com"]`|
 
 ## Example
 
