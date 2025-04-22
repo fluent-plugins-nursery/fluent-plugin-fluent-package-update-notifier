@@ -17,6 +17,8 @@ Gem::Specification.new do |spec|
   spec.metadata["changelog_uri"] = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier/blob/main/CHANGELOG.md"
   spec.metadata["bug_tracker_uri"] = "https://github.com/fluent-plugins-nursery/fluent-plugin-fluent-package-update-notifier/issues"
 
+  spec.metadata['rubygems_mfa_required'] = 'true'
+
   spec.files         = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|
       (File.expand_path(f) == __FILE__) ||
