@@ -2,6 +2,7 @@ require 'open-uri'
 require 'json'
 require 'tmpdir'
 require 'rbconfig'
+require 'specinfra'
 
 module Fluent
   module Plugin
@@ -23,6 +24,8 @@ module Fluent
             @logger.error "Failed to load #{ENV["FLUENT_PACKAGE_CONFIG"] || DEFAULT_PACKAGE_CONFIG_PATH}"
           end
           @host_os = RbConfig::CONFIG['host_os']
+          Specinfra.configuration.backend = :exec
+          @os_info = Specinfra.backend.os_info
         end
 
         def windows?
@@ -76,14 +79,13 @@ module Fluent
             [base_version.segments[1], target_version.segments[1]]  == [0, 0]
         end
 
-        def parse_os_release(key)
-          File.open("/etc/os-release").readlines.each do |line|
-            if line.start_with?(key)
-              line.chomp =~ /^#{key}=(.+)$/
-              return $1
-            end
+        def package_arch
+          case @os_info[:family]
+          when "debian", "ubuntu"
+            @os_info[:arch] == "x86_64" ? "amd64" : "arm64"
+          when "redhat", "amazon"
+            @os_info[:arch] == "x86_64" ? "x64_64" : "aarch64"
           end
-          nil
         end
 
         def package_url(prefix, distribution, version)
@@ -91,47 +93,37 @@ module Fluent
           channel = @options[:lts] ? "lts/#{major}" : major
           case distribution
           when "debian", "ubuntu"
-            release = parse_os_release("VERSION_CODENAME")
-            "#{prefix}/#{channel}/#{distribution}/#{release}/pool/contrib/f/fluent-package/fluent-package_#{version}-1_amd64.deb"
-          when "redhat/8"
-            "#{prefix}/#{channel}/#{distribution}/x86_64/fluent-package_#{version}-1.el8.x86_64.rpm"
-          when "redhat/9"
-            "#{prefix}/#{channel}/#{distribution}/x86_64/fluent-package_#{version}-1.el9.x86_64.rpm"
+            codename = @os_info[:codename]
+            File.join([prefix, channel, distribution, codename, "pool/contrib/f/fluent-package",
+                       "fluent-package_#{version}-1_#{package_arch}.deb"])
+          when "redhat"
+            major = Gem::Version.new(@os_info[:release]).segments.first
+            File.join([prefix, channel, distribution, major, package_arch,
+                      "fluent-package_#{version}-1.el#{major}.#{package_arch}.rpm"])
           when "amazon/2023"
-            "#{prefix}/#{channel}/#{distribution}/x86_64/fluent-package_#{version}-1.amzn2023.x86_64.rpm"
+            File.join([prefix, channel, distribution, package_arch,
+                       "fluent-package_#{version}-1.amzn2023.#{package_arch}.rpm"])
           when "amazon/2"
-            "#{prefix}/#{channel}/#{distribution}/x86_64/fluent-package_#{version}-1.amzn2.x86_64.rpm"
+            arch = @os_info[:arch] == "x86_64" ? "x64_64" : "aarch64"
+            File.join([prefix, channel, distribution, package_arch,
+                       "fluent-package_#{version}-1.amzn2.#{package_arch}.rpm"])
           when "windows"
-            "#{prefix}/#{channel}/#{distribution}/fluent-package-#{version}-x64.msi"
+            File.join([prefix, channel, distribution,
+                       "fluent-package-#{version}-x64.msi"])
           end
         end
 
         def generate_remote_package_url(url_prefix, target_version)
           if linux?
-            os_release_id = parse_os_release("ID")
-            case os_release_id
-            when "debian"
-              url = package_url(url_prefix, "debian", target_version)
-              @logger.debug("Check existence of #{url}")
-              url
-            when "ubuntu"
-              package_url(url_prefix, "ubuntu", target_version)
-            when "rocky", "almalinux", "amzn"
-              cpe = parse_os_release("CPE_NAME")
-              case cpe
-              when /rocky:8/, /almalinux:8/
-                package_url(url_prefix, "redhat/8", target_version)
-              when /rocky:9/, /almalinux:9/
-                package_url(url_prefix, "redhat/9", target_version)
-              when /amazon_linux:2023/, /amazon_linux:2/
-                version = parse_os_release("VERSION")
-                case version
-                when "2023"
-                  package_url(url_prefix, "amazon/2023", target_version)
-                when "2"
-                  package_url(url_prefix, "amazon/2", target_version)
-                end
-              end
+            case @os_info[:family]
+            when "debian", "ubuntu"
+              family_codename = "#{@os_info[:family]}/#{@os_info[:codename]}"
+              package_url(url_prefix, family_codename, target_version)
+            when "redhat"
+              package_url(url_prefix, "redhat", target_version)
+            when "amazon"
+              major = Gem::Version.new(@os_info[:release]).segments.first
+              package_url(url_prefix, "amazon/#{major}", target_version)
             end
           elsif windows?
             package_url(url_prefix, "windows", target_version)
