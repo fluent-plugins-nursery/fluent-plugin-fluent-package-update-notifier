@@ -1,0 +1,35 @@
+plugins:
+  - rubocop-performance
+  - rubocop-fluentd
+
+AllCops:
+  Exclude:
+    - 'vendor/**/*'
+    - 'test/**/*'
+  NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 2.7
+
+Layout:
+  Enabled: false
+Style:
+  Enabled: false
+Lint:
+  Enabled: false
+Naming:
+  Enabled: false
+Metrics:
+  Enabled: false
+Gemspec:
+  Enabled: false
+Security:
+  Enabled: false
+Performance:
+  Enabled: false
+
+Lint/FluentdPluginLogScope:
+  Enabled: true
+Lint/FluentdPluginConfigParamDefaultTime:
+  Enabled: true
+Performance/FluentdPluginLogStringInterpolation:
+  Enabled: true
