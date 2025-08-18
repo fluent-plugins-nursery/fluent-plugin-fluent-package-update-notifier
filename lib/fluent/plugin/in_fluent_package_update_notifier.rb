@@ -72,7 +72,7 @@ module Fluent
           checker = Fluent::Plugin::FluentPackage::UpdateChecker.new(options)
           checker.run
         rescue => e
-          log.error { "Failed to check updates: #{e.message}" }
+          log.info { "Failed to check updates: #{e.message}" }
         end
       end
     end
