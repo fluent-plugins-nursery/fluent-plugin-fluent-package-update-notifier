@@ -30,6 +30,11 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     ]
   end
 
+  test "multi worker" do
+    d = create_driver
+    assert_true d.instance.multi_workers_ready?
+  end
+
   sub_test_case "configuration test" do
     test "default configuration" do
       assert_nothing_raised do
