@@ -40,6 +40,10 @@ module Fluent
       desc "Package repository site"
       config_param :repository_sites, :array, default: ["https://packages.treasuredata.com"]
 
+      def multi_workers_ready?
+        true
+      end
+
       def configure(conf)
         super
       end
