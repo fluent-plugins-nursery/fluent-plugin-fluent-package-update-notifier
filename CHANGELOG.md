@@ -1,3 +1,8 @@
+# 0.2.3 - 2025-08-28
+
+* Remove unnecessary error log (#10)
+* Relax log level (#11)
+
 # 0.2.2 - 2025-08-27
 
 * in_fluent_package_update_notifier: support multi worker (#8)
