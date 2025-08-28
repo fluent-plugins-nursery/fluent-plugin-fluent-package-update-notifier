@@ -42,7 +42,7 @@ module Fluent
         end
 
         def cached_tags_path
-          ENV["FLUENT_PACKAGE_TAGS_PATH"] ? 
+          ENV["FLUENT_PACKAGE_TAGS_PATH"] ?
             ENV["FLUENT_PACKAGE_TAGS_PATH"] : "#{@tmp_dir}/fluent-package-tags.json"
         end
 
@@ -51,20 +51,16 @@ module Fluent
         end
 
         def fetch_tags
-          begin
-            if tags_cached?
-              yield JSON.parse(File.open(cached_tags_path).read)
-            else
-              URI.open(release_tags_url) do |resource|
-                File.open(cached_tags_path, "w+") do |f|
-                  json = resource.read
-                  f.write(json)
-                  yield JSON.parse(json)
-                end
+          if tags_cached?
+            yield JSON.parse(File.open(cached_tags_path).read)
+          else
+            URI.open(release_tags_url) do |resource|
+              File.open(cached_tags_path, "w+") do |f|
+                json = resource.read
+                f.write(json)
+                yield JSON.parse(json)
               end
             end
-          rescue => e
-            @logger.error "Failed to fetch tags", error: e
           end
         end
 
@@ -176,6 +172,7 @@ module Fluent
               end
             end
           end
+        ensure
           FileUtils.rm_rf(@tmp_dir)
         end
 
