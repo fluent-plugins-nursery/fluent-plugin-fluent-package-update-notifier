@@ -21,7 +21,7 @@ module Fluent
           begin
             require ENV["FLUENT_PACKAGE_CONFIG"] || DEFAULT_PACKAGE_CONFIG_PATH
           rescue LoadError
-            @logger.error "Failed to load #{ENV["FLUENT_PACKAGE_CONFIG"] || DEFAULT_PACKAGE_CONFIG_PATH}"
+            @logger.info "Failed to load #{ENV["FLUENT_PACKAGE_CONFIG"] || DEFAULT_PACKAGE_CONFIG_PATH}"
           end
           @host_os = RbConfig::CONFIG['host_os']
           Specinfra.configuration.backend = windows? ? :cmd : :exec
