@@ -3,6 +3,8 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
 
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
@@ -11,15 +13,20 @@ concurrency:
 permissions: read-all
 
 jobs:
+  ruby-versions:
+    uses: ruby/actions/.github/workflows/ruby_versions.yml@master
+    with:
+      engine: cruby
+      min_version: 3.2
   test:
+    needs: ruby-versions
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        ruby:
-          - 3.2
-          - 3.3
-          - 3.4
+        ruby: ${{ fromJson(needs.ruby-versions.outputs.versions) }}
+        exclude:
+          - ruby: head
         os:
           - ubuntu-latest
           - windows-latest
