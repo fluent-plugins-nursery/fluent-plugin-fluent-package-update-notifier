@@ -24,6 +24,7 @@ module Fluent
             @logger.info "Failed to load #{ENV["FLUENT_PACKAGE_CONFIG"] || DEFAULT_PACKAGE_CONFIG_PATH}"
           end
           @host_os = RbConfig::CONFIG['host_os']
+          @host_cpu = RbConfig::CONFIG['host_cpu']
           Specinfra.configuration.backend = windows? ? :cmd : :exec
           @os_info = Specinfra.backend.os_info
         end
@@ -81,6 +82,8 @@ module Fluent
             @os_info[:arch] == "x86_64" ? "amd64" : "arm64"
           when "redhat", "amazon"
             @os_info[:arch] == "x86_64" ? "x64_64" : "aarch64"
+          when "windows"
+            @host_cpu == "aarch64" ? "arm64" : "x64"
           end
         end
 
@@ -105,7 +108,7 @@ module Fluent
                        "fluent-package_#{version}-1.amzn2.#{package_arch}.rpm"])
           when "windows"
             File.join([prefix, channel, distribution,
-                       "fluent-package-#{version}-x64.msi"])
+                       "fluent-package-#{version}-#{package_arch}.msi"])
           end
         end
 

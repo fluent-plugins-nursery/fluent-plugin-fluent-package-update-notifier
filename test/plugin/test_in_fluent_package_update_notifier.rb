@@ -243,6 +243,21 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
         assert_match(/\[info\]: No update for fluent-package 5.0.6/, d.logs.last)
       end
     end
+
+    data("x64" => ["x64", "fluent-package-6.0.1-x64.msi"],
+         "arm64" => ["aarch64", "fluent-package-6.0.1-arm64.msi"])
+    test "check msi of the same architecture for windows" do |(host_cpu, msi)|
+      config = RbConfig::CONFIG.merge("host_os" => "mingw32", "host_cpu" => host_cpu)
+      stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
+      urls = []
+      stub(URI).open(anything) { |url| urls << url }
+      write_config_version("6.0.0")
+      cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["6.0.1", "6.0.0"])
+      d = create_driver
+      d.run
+      assert_equal(["https://packages.treasuredata.com/lts/6/windows/#{msi}"], urls)
+      assert_match(/\[info\]: fluent-package v6.0.1 is available/, d.logs.last)
+    end
   end
 
   private
