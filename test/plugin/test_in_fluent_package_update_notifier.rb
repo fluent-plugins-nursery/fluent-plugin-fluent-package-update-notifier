@@ -208,6 +208,37 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     end
   end
 
+  sub_test_case "package directory of each channel" do
+    setup do
+      ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
+      ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+    end
+
+    data("redhat on standard channel" => [false, "linux", {family: "redhat", release: "9", arch: "aarch64"},
+                                          "5/redhat/9/aarch64"],
+         "amazon on standard channel" => [false, "linux", {family: "amazon", release: "2023", arch: "aarch64"},
+                                          "5/amazon/2023/aarch64"],
+         "windows on standard channel" => [false, "mingw32", {family: "windows"},
+                                           "5/windows"],
+         "redhat on LTS channel" => [true, "linux", {family: "redhat", release: "9", arch: "aarch64"},
+                                     "lts/5/redhat/9/aarch64"])
+    test "check package in the directory of the channel" do |(lts, host_os, os_info, dir)|
+      config = RbConfig::CONFIG.merge("host_os" => host_os)
+      stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
+      backend = Object.new
+      stub(backend).os_info { os_info }
+      stub(Specinfra).backend { backend }
+      urls = []
+      stub(URI).open(anything) { |url| urls << url }
+      write_config_version("5.0.6")
+      cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.7", "5.0.6"])
+      d = create_driver("lts #{lts}")
+      d.run
+      assert_equal(["https://packages.treasuredata.com/#{dir}"], urls.collect { |url| File.dirname(url) })
+      assert_match(/\[info\]: fluent-package v5.0.7 is available/, d.logs.last)
+    end
+  end
+
   sub_test_case "each platforms" do
     setup do
       ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
