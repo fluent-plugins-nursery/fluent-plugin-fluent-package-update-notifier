@@ -235,6 +235,37 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     end
   end
 
+  sub_test_case "rpm package url" do
+    setup do
+      ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
+      ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+    end
+
+    data("redhat 9 x86_64" => [{family: "redhat", release: "9.8", arch: "x86_64"},
+                               "lts/5/redhat/9/x86_64/fluent-package-5.0.7-1.el9.x86_64.rpm"],
+         "redhat 8 aarch64" => [{family: "redhat", release: "8.10", arch: "aarch64"},
+                                "lts/5/redhat/8/aarch64/fluent-package-5.0.7-1.el8.aarch64.rpm"],
+         "amazon 2023 x86_64" => [{family: "amazon", release: "2023.12.20260930", arch: "x86_64"},
+                                  "lts/5/amazon/2023/x86_64/fluent-package-5.0.7-1.amzn2023.x86_64.rpm"],
+         "amazon 2 aarch64" => [{family: "amazon", release: "2", arch: "aarch64"},
+                                "lts/5/amazon/2/aarch64/fluent-package-5.0.7-1.amzn2.aarch64.rpm"])
+    test "check rpm package of the release" do |(os_info, path)|
+      config = RbConfig::CONFIG.merge("host_os" => "linux")
+      stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
+      backend = Object.new
+      stub(backend).os_info { os_info }
+      stub(Specinfra).backend { backend }
+      urls = []
+      stub(URI).open(anything) { |url| urls << url }
+      write_config_version("5.0.6")
+      cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.7", "5.0.6"])
+      d = create_driver
+      d.run
+      assert_equal(["https://packages.treasuredata.com/#{path}"], urls)
+      assert_match(/\[info\]: fluent-package v5.0.7 is available/, d.logs.last)
+    end
+  end
+
   sub_test_case "package directory of each channel" do
     setup do
       ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"

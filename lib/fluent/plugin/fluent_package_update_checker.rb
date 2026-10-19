@@ -81,7 +81,7 @@ module Fluent
           when "debian", "ubuntu"
             @os_info[:arch] == "x86_64" ? "amd64" : "arm64"
           when "redhat", "amazon"
-            @os_info[:arch] == "x86_64" ? "x64_64" : "aarch64"
+            @os_info[:arch] == "x86_64" ? "x86_64" : "aarch64"
           when "windows"
             @host_cpu == "aarch64" ? "arm64" : "x64"
           end
@@ -98,14 +98,13 @@ module Fluent
           when "redhat"
             major = Gem::Version.new(@os_info[:release]).segments.first
             File.join([prefix, channel, distribution, major.to_s, package_arch,
-                      "fluent-package_#{version}-1.el#{major}.#{package_arch}.rpm"])
+                      "fluent-package-#{version}-1.el#{major}.#{package_arch}.rpm"])
           when "amazon/2023"
             File.join([prefix, channel, distribution, package_arch,
-                       "fluent-package_#{version}-1.amzn2023.#{package_arch}.rpm"])
+                       "fluent-package-#{version}-1.amzn2023.#{package_arch}.rpm"])
           when "amazon/2"
-            arch = @os_info[:arch] == "x86_64" ? "x64_64" : "aarch64"
             File.join([prefix, channel, distribution, package_arch,
-                       "fluent-package_#{version}-1.amzn2.#{package_arch}.rpm"])
+                       "fluent-package-#{version}-1.amzn2.#{package_arch}.rpm"])
           when "windows"
             File.join([prefix, channel, distribution,
                        "fluent-package-#{version}-#{package_arch}.msi"])
