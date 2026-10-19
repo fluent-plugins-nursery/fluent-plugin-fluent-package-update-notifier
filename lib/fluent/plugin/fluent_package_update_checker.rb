@@ -137,7 +137,9 @@ module Fluent
           major = target_version.segments.first
           check_remote_packages(target_version) do |url|
             begin
-              URI.open(url)
+              # Sec-GPC prevents Scarf Gateway from counting this check as a download
+              # https://docs.scarf.sh/gateway/#do-not-track
+              URI.open(url, "Range" => "bytes=0-0", "Sec-GPC" => "1")
               return true
             rescue => e
               # package is not available

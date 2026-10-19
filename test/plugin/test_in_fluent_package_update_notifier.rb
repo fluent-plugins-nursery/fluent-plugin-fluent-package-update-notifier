@@ -2,6 +2,7 @@ require 'helper'
 require 'fluent/plugin/in_fluent_package_update_notifier'
 require 'tmpdir'
 require 'securerandom'
+require 'webrick'
 
 class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
 
@@ -157,7 +158,7 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
       stub(backend).os_info { os_info }
       stub(Specinfra).backend { backend }
       urls = []
-      stub(URI).open(anything) { |url| urls << url }
+      stub(URI).open.with_any_args { |url, *| urls << url }
       write_config_version("6.0.0")
       cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["6.0.1", "6.0.0"])
       d = create_driver
@@ -256,7 +257,7 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
       stub(backend).os_info { os_info }
       stub(Specinfra).backend { backend }
       urls = []
-      stub(URI).open(anything) { |url| urls << url }
+      stub(URI).open.with_any_args { |url, *| urls << url }
       write_config_version("5.0.6")
       cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.7", "5.0.6"])
       d = create_driver
@@ -287,13 +288,70 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
       stub(backend).os_info { os_info }
       stub(Specinfra).backend { backend }
       urls = []
-      stub(URI).open(anything) { |url| urls << url }
+      stub(URI).open.with_any_args { |url, *| urls << url }
       write_config_version("5.0.6")
       cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["5.0.7", "5.0.6"])
       d = create_driver("lts #{lts}")
       d.run
       assert_equal(["https://packages.treasuredata.com/#{dir}"], urls.collect { |url| File.dirname(url) })
       assert_match(/\[info\]: fluent-package v5.0.7 is available/, d.logs.last)
+    end
+  end
+
+  sub_test_case "request to repository site" do
+    setup do
+      ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
+      ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+      @requests = []
+      @server = WEBrick::HTTPServer.new(BindAddress: "127.0.0.1", Port: 0,
+                                        Logger: WEBrick::Log.new(nil, 0), AccessLog: [])
+      @server.mount_proc("/") do |req, res|
+        @requests << [req.request_method, req.path, req["Range"], req["Sec-GPC"]]
+        if req.path.start_with?("/redirect/")
+          res.set_redirect(WEBrick::HTTPStatus::TemporaryRedirect, req.path.delete_prefix("/redirect"))
+        elsif req.path == "/lts/6/windows/fluent-package-6.0.1-x64.msi"
+          if req["Range"] == "bytes=0-0"
+            res.status = 206
+            res["Content-Range"] = "bytes 0-0/3"
+            res.body = "m"
+          else
+            res.body = "msi"
+          end
+        else
+          res.status = 404
+        end
+      end
+      @server_thread = Thread.new { @server.start }
+    end
+
+    teardown do
+      @server.shutdown
+      @server_thread.join
+    end
+
+    data("released" => ["", "6.0.1", ["/lts/6/windows/fluent-package-6.0.1-x64.msi"],
+                        /fluent-package v6.0.1 is available/],
+         "released behind redirect" => ["/redirect", "6.0.1",
+                                        ["/redirect/lts/6/windows/fluent-package-6.0.1-x64.msi",
+                                         "/lts/6/windows/fluent-package-6.0.1-x64.msi"],
+                                        /fluent-package v6.0.1 is available/],
+         "not released" => ["", "6.0.2", ["/lts/6/windows/fluent-package-6.0.2-x64.msi"],
+                            /No update for fluent-package 6.0.0/],
+         "not released behind redirect" => ["/redirect", "6.0.2",
+                                            ["/redirect/lts/6/windows/fluent-package-6.0.2-x64.msi",
+                                             "/lts/6/windows/fluent-package-6.0.2-x64.msi"],
+                                            /No update for fluent-package 6.0.0/])
+    test "check package with range request" do |(path_prefix, version, paths, message)|
+      config = RbConfig::CONFIG.merge("host_os" => "mingw32", "host_cpu" => "x64")
+      stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
+      write_config_version("6.0.0")
+      cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], [version, "6.0.0"])
+      d = create_driver(%[
+        repository_sites ["http://127.0.0.1:#{@server.config[:Port]}#{path_prefix}"]
+      ])
+      d.run
+      assert_equal(paths.collect { |path| ["GET", path, "bytes=0-0", "1"] }, @requests)
+      assert_match(message, d.logs.last)
     end
   end
 
@@ -339,7 +397,7 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
       config = RbConfig::CONFIG.merge("host_os" => "mingw32", "host_cpu" => host_cpu)
       stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
       urls = []
-      stub(URI).open(anything) { |url| urls << url }
+      stub(URI).open.with_any_args { |url, *| urls << url }
       write_config_version("6.0.0")
       cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["6.0.1", "6.0.0"])
       d = create_driver
