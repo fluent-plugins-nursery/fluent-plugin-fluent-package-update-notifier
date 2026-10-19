@@ -89,7 +89,7 @@ module Fluent
 
         def package_url(prefix, distribution, version)
           major = version.segments.first
-          channel = @options[:lts] ? "lts/#{major}" : major
+          channel = @options[:lts] ? "lts/#{major}" : major.to_s
           case distribution
           when "debian", "ubuntu"
             codename = @os_info[:codename]
@@ -97,7 +97,7 @@ module Fluent
                        "fluent-package_#{version}-1_#{package_arch}.deb"])
           when "redhat"
             major = Gem::Version.new(@os_info[:release]).segments.first
-            File.join([prefix, channel, distribution, major, package_arch,
+            File.join([prefix, channel, distribution, major.to_s, package_arch,
                       "fluent-package_#{version}-1.el#{major}.#{package_arch}.rpm"])
           when "amazon/2023"
             File.join([prefix, channel, distribution, package_arch,
