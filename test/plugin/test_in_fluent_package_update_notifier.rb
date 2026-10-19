@@ -140,6 +140,33 @@ class FluentPackageUpdateNotifierInputTest < Test::Unit::TestCase
     end
   end
 
+  sub_test_case "deb package url" do
+    setup do
+      ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"
+      ENV["FLUENT_PACKAGE_TAGS_PATH"] = "#{@tmp_dir}/tags.json"
+    end
+
+    data("debian" => [{family: "debian", codename: "bookworm", arch: "x86_64"},
+                      "lts/6/debian/bookworm/pool/contrib/f/fluent-package/fluent-package_6.0.1-1_amd64.deb"],
+         "ubuntu" => [{family: "ubuntu", codename: "noble", arch: "aarch64"},
+                      "lts/6/ubuntu/noble/pool/contrib/f/fluent-package/fluent-package_6.0.1-1_arm64.deb"])
+    test "check deb package of the codename" do |(os_info, path)|
+      config = RbConfig::CONFIG.merge("host_os" => "linux")
+      stub(RbConfig::CONFIG).[](anything) { |key| config[key] }
+      backend = Object.new
+      stub(backend).os_info { os_info }
+      stub(Specinfra).backend { backend }
+      urls = []
+      stub(URI).open(anything) { |url| urls << url }
+      write_config_version("6.0.0")
+      cache_tags_path(ENV["FLUENT_PACKAGE_TAGS_PATH"], ["6.0.1", "6.0.0"])
+      d = create_driver
+      d.run
+      assert_equal(["https://packages.treasuredata.com/#{path}"], urls)
+      assert_match(/\[info\]: fluent-package v6.0.1 is available/, d.logs.last)
+    end
+  end
+
   sub_test_case "standard channel updates" do
     setup do
       ENV["FLUENT_PACKAGE_CONFIG"] = "#{@tmp_dir}/config.rb"

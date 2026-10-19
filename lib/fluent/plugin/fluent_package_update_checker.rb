@@ -113,8 +113,7 @@ module Fluent
           if linux?
             case @os_info[:family]
             when "debian", "ubuntu"
-              family_codename = "#{@os_info[:family]}/#{@os_info[:codename]}"
-              package_url(url_prefix, family_codename, target_version)
+              package_url(url_prefix, @os_info[:family], target_version)
             when "redhat"
               package_url(url_prefix, "redhat", target_version)
             when "amazon"
